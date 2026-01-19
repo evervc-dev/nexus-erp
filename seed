@@ -1,0 +1,62 @@
+#!/usr/bin/env php
+<?php
+
+use App\Core\Database;
+use Dotenv\Dotenv;
+
+// 1. Cargar dependencias y entorno
+if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+    die("Error: Ejecuta 'composer install' primero.\n");
+}
+require __DIR__ . '/vendor/autoload.php';
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->safeLoad();
+
+// 2. Configuración BD
+$configPath = __DIR__ . '/config/database.php';
+if (!file_exists($configPath)) {
+    die("Error: Falta config/database.php\n");
+}
+$dbConfig = require $configPath;
+
+echo "🥑 Nexus ERP Seeder Tool\n";
+echo "========================================\n";
+
+try {
+    // 3. Conexión
+    $db = new Database($dbConfig['pgsql']);
+    $pdo = $db->getPdo();
+
+    // 4. Buscar archivos en app/Database/Seeders
+    $path = __DIR__ . '/app/Database/Seeders/*.php';
+    $files = glob($path);
+    sort($files);
+
+    if (empty($files)) {
+        echo "⚠️ No se encontraron seeders en app/Database/Seeders/\n";
+        exit;
+    }
+
+    // 5. Ejecutar cada seeder
+    foreach ($files as $file) {
+        $name = basename($file);
+        echo "▶ Ejecutando: $name...\n";
+        
+        // Incluimos el archivo y ejecutamos la función que retorna
+        $seeder = require $file;
+        
+        if (is_callable($seeder)) {
+            $seeder($pdo);
+        } else {
+            echo "❌ Error: El archivo $name no retorna una función válida.\n";
+        }
+    }
+
+    echo "========================================\n";
+    echo "✅ Sembrado completado exitosamente.\n";
+
+} catch (Exception $e) {
+    echo "\n❌ ERROR CRÍTICO: " . $e->getMessage() . "\n";
+    exit(1);
+}

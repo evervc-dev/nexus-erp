@@ -1,0 +1,90 @@
+#!/usr/bin/env php
+<?php
+
+use App\Core\Database;
+use Dotenv\Dotenv;
+
+// 1. Cargar dependencias
+if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+    die("Error: No se encuentra 'vendor/autoload.php'.\n");
+}
+require __DIR__ . '/vendor/autoload.php';
+
+// 2. Cargar Entorno
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->safeLoad();
+
+// 3. Configuración BD
+$configPath = __DIR__ . '/config/database.php';
+if (!file_exists($configPath)) {
+    die("Error: No existe config/database.php\n");
+}
+$dbConfig = require $configPath;
+
+echo "🏗️  Iniciando Migraciones Nexus ERP...\n";
+
+try {
+    $db = new Database($dbConfig['pgsql']);
+    $pdo = $db->getPdo();
+
+    // ---------------------------------------------------------
+    // VERIFICACIÓN
+    // ---------------------------------------------------------
+    
+    // Verifica si la tabla 'migrations' existe en PostgreSQL
+    // to_regclass es una función muy rápida de Postgres para esto
+    $stmt = $pdo->query("SELECT to_regclass('public.migrations')");
+    $tableExists = $stmt->fetchColumn();
+
+    $executed = [];
+
+    if ($tableExists) {
+        // Si existe, obtiene el historial
+        $executed = $pdo->query("SELECT migration FROM migrations")->fetchAll(PDO::FETCH_COLUMN);
+    } else {
+        echo "✨ Inicializando sistema por primera vez (tabla 'migrations' no detectada).\n";
+    }
+
+    // ---------------------------------------------------------
+    // EJECUCIÓN
+    // ---------------------------------------------------------
+
+    $files = glob(__DIR__ . '/app/Database/Migrations/*.php');
+    sort($files); // Asegura que 000 vaya antes que 001
+
+    $count = 0;
+
+    foreach ($files as $file) {
+        $name = basename($file);
+
+        // Si ya está en la lista de ejecutados, salta
+        if (in_array($name, $executed)) {
+            continue;
+        }
+
+        echo "▶ Ejecutando: $name... ";
+
+        // Importa y ejecuta la migración
+        $migration = require $file;
+        $migration($pdo);
+
+        // REGISTRO
+        // Si acaba de correr la migración 000, 
+        // la tabla se acaba de crear hace milisegundos, así que ya puede insertar en ella.
+        $stmt = $pdo->prepare("INSERT INTO migrations (migration) VALUES (:name)");
+        $stmt->execute(['name' => $name]);
+
+        echo "✔ Hecho.\n";
+        $count++;
+    }
+
+    if ($count === 0) {
+        echo "✨ Todo está actualizado.\n";
+    } else {
+        echo "🎉 $count migraciones aplicadas exitosamente.\n";
+    }
+
+} catch (Exception $e) {
+    echo "\n❌ ERROR CRÍTICO: " . $e->getMessage() . "\n";
+    exit(1);
+}
