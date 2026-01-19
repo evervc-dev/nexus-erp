@@ -20,7 +20,12 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/projects">Proyectos</a>
                         </li>
+                        <?php if (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero', 'MaestroObra'])): ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/employees">Empleados</a>
+                            </li>
                         <?php endif; ?>
+                    <?php endif; ?>
                 </ul>
 
                 <ul class="navbar-nav ms-auto align-items-center">
@@ -57,9 +62,12 @@
                         </li>
 
                     <?php else: ?>
+                        <li class="nav-item me-2">
+                            <a class="nav-link" href="/login">Iniciar Sesión</a>
+                        </li>
                         <li class="nav-item">
-                            <a class="btn btn-outline-warning btn-sm" href="/login">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                            <a class="btn btn-warning btn-sm text-dark fw-bold" href="/register">
+                                <i class="bi bi-person-plus-fill me-1"></i> Crear Cuenta
                             </a>
                         </li>
                     <?php endif; ?>

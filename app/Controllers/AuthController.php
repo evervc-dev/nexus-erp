@@ -5,7 +5,9 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Database;
 use App\Core\Request;
+use App\Models\User;
 use App\Repositories\UserRepository;
+use Exception;
 
 class AuthController extends Controller
 {
@@ -116,5 +118,90 @@ class AuthController extends Controller
         session_destroy();
 
         $this->redirect('/login');
+    }
+
+    /**
+     * Muestra el formulario de registro (GET)
+     */
+    public function registerForm(): void
+    {
+        // Si ya está logueado, redirigir al Dashboard
+        if (isset($_SESSION['user_id'])) {
+            $this->redirect('/');
+        }
+
+        $this->view('auth/register', [
+            'title' => 'Crear Cuenta - Nexus ERP'
+        ]);
+    }
+
+    /**
+     * Procesa el registro de un nuevo Cliente (POST)
+     */
+    public function register(): void
+    {
+        // Obtiene datos del Request
+        $data = $this->request->getBody();
+
+        // Validaciones Básicas
+        if ($data['password'] !== $data['confirm_password']) {
+            $this->view('auth/register', [
+                'error' => 'Las contraseñas no coinciden.',
+                'old' => $data
+            ]);
+            return;
+        }
+
+        // Verifica si el correo ya existe
+        if ($this->userRepo->findByEmail($data['email'])) {
+            $this->view('auth/register', [
+                'error' => 'Este correo electrónico ya está registrado.',
+                'old' => $data
+            ]);
+            return;
+        }
+
+        // Obtiene el ID del rol "Cliente" para forzar el rol
+        $clientRoleId = $this->userRepo->getRoleIdByName('Cliente');
+
+        if (!$clientRoleId) {
+            throw new Exception("Error Crítico: El rol 'Cliente' no existe en la base de datos.");
+        }
+
+        // Crea la Entidad Usuario        
+        $newUser = new User(
+            null,
+            $clientRoleId, // role_id (Forzado a Cliente)
+            $data['first_name'], // name (Viene del form como first_name)
+            $data['last_name'],
+            $data['email'],
+            password_hash($data['password'], PASSWORD_BCRYPT),
+            $data['phone'] ?? null, // phone (Opcional, null si no viene)
+            true, // is_active (Default true)
+            null // created_at (BD lo genera)
+        );
+
+        // Guarda en Base de Datos
+        try {
+            $newId = $this->userRepo->save($newUser);
+
+            // Auto-Login (Iniciamos sesión automáticamente)
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $newId;
+            $_SESSION['user_name'] = $newUser->name . ' ' . $newUser->last_name;
+            $_SESSION['user_email'] = $newUser->email;
+            $_SESSION['role_id'] = $clientRoleId;
+            $_SESSION['role_name'] = 'Cliente';
+
+            // Redirige al Dashboard
+            $this->redirect('/');
+
+        } catch (Exception $e) {
+            // Manejo de error por si falla la base de datos
+            $this->view('auth/register', [
+                'error' => 'Ocurrió un error al crear la cuenta. Intenta nuevamente.',
+                'old' => $data
+            ]);
+        }
     }
 }

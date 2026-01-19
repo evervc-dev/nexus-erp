@@ -46,6 +46,18 @@ class UserRepository
         return $row ? User::fromArray($row) : null;
     }
 
+    /**
+     * Busca el ID de un rol por su nombre.
+     */
+    public function getRoleIdByName(string $roleName): ?int
+    {
+        $stmt = $this->pdo->prepare("SELECT id FROM roles WHERE name = :name LIMIT 1");
+        $stmt->execute(['name' => $roleName]);
+        
+        $id = $stmt->fetchColumn();
+        return $id ? (int) $id : null;
+    }
+
     public function save(User $user): int
     {
         // Lógica simple: Si tiene ID es update, sino insert

@@ -119,20 +119,31 @@ class Router
      */
     private function executeMiddleware(string $key): void
     {
-        // Define el mapa de alias. 
-        // Más adelante DEBO AGREGAR 'role:admin', etc.
+        // Separa el alias de los parámetros (ej: "role:Admin,Editor")
+        $parts = explode(':', $key, 2); 
+        $alias = $parts[0]; // "role"
+        $params = [];
+
+        if (isset($parts[1])) {
+            // Convertir "Admin,Editor" en array ['Admin', 'Editor']
+            $params = explode(',', $parts[1]); 
+        }
+
+        // Define el mapa con las clases de middleware
         $map = [
             'auth' => \App\Middlewares\AuthMiddleware::class,
-            // 'guest' => \App\Middlewares\GuestMiddleware::class,
+            'role' => \App\Middlewares\RoleMiddleware::class,
         ];
 
-        if (isset($map[$key])) {
-            $middlewareClass = $map[$key];
+        if (isset($map[$alias])) {
+            $middlewareClass = $map[$alias];
             $middleware = new $middlewareClass();
-            $middleware->handle();
+            
+            // Ejecuta pasando los parámetros usando el operador 'spread' (...)
+            // Esto permite que el método handle reciba (string ...$roles)
+            $middleware->handle(...$params); 
         } else {
-            // Si no encuentra el middleware, lanza error 500
-            throw new \Exception("Middleware '$key' no está registrado en el Router.");
+            throw new \Exception("Middleware '$alias' no está registrado en el Router.");
         }
     }
 }

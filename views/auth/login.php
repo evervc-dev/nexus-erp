@@ -53,8 +53,15 @@
                     </div>
                 </form>
             </div>
+            
             <div class="card-footer text-center py-3 bg-light">
-                <small class="text-muted">¿Olvidaste tu contraseña? Contacta al Soporte IT.</small>
+                <div class="mb-2">
+                    ¿Aún no tienes cuenta? 
+                    <a href="/register" class="text-decoration-none fw-bold">Regístrate aquí</a>
+                </div>
+                <small class="text-muted" style="font-size: 0.8rem;">
+                    ¿Olvidaste tu contraseña? Contacta al Soporte IT.
+                </small>
             </div>
         </div>
     </div>
