@@ -120,6 +120,13 @@ class ProjectRepository
         return (int) $stmt->fetchColumn();
     }
 
+    public function updateStatus(int $id, string $status): void
+    {
+        $sql = "UPDATE projects SET status = :status WHERE id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['status' => $status, 'id' => $id]);
+    }
+
     /**
      * Crea un proyecto y sus asignaciones en una sola transacción.
      * @param Project $project Datos del proyecto

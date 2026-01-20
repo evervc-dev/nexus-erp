@@ -65,6 +65,11 @@ $router->post('/projects/create', [ProjectController::class, 'store'])
 $router->get('/projects/view/{id}', [ProjectController::class, 'show'])
        ->middleware('auth');
 
+// Cambiar Estado del Proyecto (Solo Admin e Ingeniero)
+$router->post('/projects/update-status/{id}', [ProjectController::class, 'updateStatus'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
 // Acciones de Presupuesto (Solo Ingenieros/Admin)
 $router->post('/budget/add', [BudgetController::class, 'store'])
        ->middleware('auth')

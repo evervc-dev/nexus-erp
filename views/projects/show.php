@@ -10,10 +10,50 @@
             <div class="col-md-8">
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <h2 class="fw-bold mb-0 text-dark"><?= htmlspecialchars($project->name) ?></h2>
-                    <span class="badge rounded-pill bg-<?= $project->getStatusColor() ?> px-3">
-                        <?= ucfirst($project->status) ?>
-                    </span>
+                    
+                    <?php if (in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero'])): ?>
+                        <div class="dropdown">
+                            <button class="btn btn-<?= $project->getStatusColor() ?> btn-sm rounded-pill px-3 dropdown-toggle fw-bold text-uppercase" type="button" data-bs-toggle="dropdown">
+                                <?= ucfirst($project->status) ?>
+                            </button>
+                            <ul class="dropdown-menu shadow-sm border-0">
+                                <li>
+                                    <h6 class="dropdown-header">Cambiar Estado</h6>
+                                </li>
+                                <li>
+                                    <form action="/projects/update-status/<?= $project->id ?>" method="POST">
+                                        <input type="hidden" name="status" value="borrador">
+                                        <button class="dropdown-item" type="submit"><i class="bi bi-circle text-secondary me-2"></i>Borrador</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="/projects/update-status/<?= $project->id ?>" method="POST">
+                                        <input type="hidden" name="status" value="activo">
+                                        <button class="dropdown-item" type="submit"><i class="bi bi-play-circle text-success me-2"></i>Activo</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form action="/projects/update-status/<?= $project->id ?>" method="POST">
+                                        <input type="hidden" name="status" value="detenido">
+                                        <button class="dropdown-item" type="submit"><i class="bi bi-pause-circle text-danger me-2"></i>Detenido</button>
+                                    </form>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="/projects/update-status/<?= $project->id ?>" method="POST">
+                                        <input type="hidden" name="status" value="finalizado">
+                                        <button class="dropdown-item fw-bold text-primary" type="submit"><i class="bi bi-check-circle-fill me-2"></i>Finalizado</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    <?php else: ?>
+                        <span class="badge rounded-pill bg-<?= $project->getStatusColor() ?> px-3">
+                            <?= ucfirst($project->status) ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
+                
                 <p class="text-muted mb-0">
                     <i class="bi bi-geo-alt-fill text-danger me-1"></i> 
                     <?= htmlspecialchars($project->location ?? 'Ubicación no definida') ?>
@@ -22,13 +62,21 @@
                     Manager: <strong><?= htmlspecialchars($project->manager_name) ?></strong>
                 </p>
             </div>
+            
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="text-muted small text-uppercase fw-bold">Presupuesto Total</div>
                 <div class="fs-3 fw-bold text-dark">$<?= number_format($project->budget, 2) ?></div>
-                <div class="progress mt-2" style="height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                
+                <div class="d-flex justify-content-between small text-muted mt-2">
+                    <span>Progreso General</span>
+                    <span class="fw-bold text-dark"><?= $kpi['progress'] ?>%</span>
                 </div>
-                <small class="text-muted" style="font-size: 0.75rem;">0% Ejecutado (Pendiente)</small>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: <?= $kpi['progress'] ?>%;" 
+                         aria-valuenow="<?= $kpi['progress'] ?>" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -63,30 +111,48 @@
     
     <div class="tab-pane fade show active" id="overview" role="tabpanel">
         <div class="row g-4">
+            
             <div class="col-md-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
-                        <h6 class="text-muted">Días Restantes</h6>
-                        <h3 class="fw-bold text-primary">--</h3>
-                        <small>Fecha fin: <?= $project->end_date ? date('d/m/Y', strtotime($project->end_date)) : 'N/A' ?></small>
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-calendar-event fs-4"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase small fw-bold">Tiempo Restante</h6>
+                        <h3 class="fw-bold text-dark"><?= $kpi['days_label'] ?></h3>
+                        <small class="text-muted">
+                            Fin: <?= $project->end_date ? date('d/m/Y', strtotime($project->end_date)) : 'N/A' ?>
+                        </small>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
-                        <h6 class="text-muted">Gastos vs Presupuesto</h6>
-                        <h3 class="fw-bold text-success">$0.00</h3>
-                        <small>Disponible: $<?= number_format($project->budget, 2) ?></small>
+                         <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-cash-stack fs-4"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase small fw-bold">Gastos Planificados</h6>
+                        <h3 class="fw-bold text-dark">$<?= number_format($totalAllocated, 2) ?></h3>
+                        <small class="text-success fw-bold">
+                            <?= number_format(($totalAllocated / ($project->budget > 0 ? $project->budget : 1)) * 100, 2) ?>% del Presupuesto
+                        </small>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
-                        <h6 class="text-muted">Tareas Completadas</h6>
-                        <h3 class="fw-bold text-warning">0 / 0</h3>
-                        <small>0% Avance</small>
+                         <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle mb-3" style="width: 50px; height: 50px;">
+                            <i class="bi bi-list-check fs-4"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase small fw-bold">Tareas Completadas</h6>
+                        <h3 class="fw-bold text-dark">
+                            <?= $kpi['completed_tasks'] ?> <span class="text-muted fs-6 fw-normal">/ <?= $kpi['total_tasks'] ?></span>
+                        </h3>
+                        <small class="text-warning fw-bold"><?= $kpi['progress'] ?>% Avance Físico</small>
                     </div>
                 </div>
             </div>
