@@ -30,8 +30,8 @@ class Database
                 PDO::ATTR_STRINGIFY_FETCHES => false, // Mantener tipos de datos (int como int, no string)
             ]);
         } catch (PDOException $e) {
-            // En producción no debe mostrar el mensaje exacto al usuario
-            die("Error de conexión a la Base de Datos: " . $e->getMessage());
+            // Propaga la excepción para que el manejador global use ErrorController
+            throw new \RuntimeException("Error de conexión a la Base de Datos", 0, $e);
         }
     }
 

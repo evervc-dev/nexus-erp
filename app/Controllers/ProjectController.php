@@ -109,9 +109,9 @@ class ProjectController extends Controller
             $this->projectRepo->createWithAssignments($project, $clientId, $masterIds);
             $this->redirect('/projects');
         } catch (\Exception $e) {
-            // Loguear error y mostrar mensaje
-            // Logger::error(...)
-            die("Error al crear proyecto: " . $e->getMessage()); 
+            // Mostrar error amigable usando el controlador de errores
+            (new ErrorController())->show(500, "Error al crear proyecto: " . $e->getMessage());
+            return;
         }
     }
 
