@@ -3,6 +3,7 @@
 use App\Controllers\AuthController;
 use App\Controllers\EmployeeController;
 use App\Controllers\HomeController;
+use App\Controllers\ProjectController;
 
 /** @var App\Core\Router $router */
 
@@ -41,3 +42,22 @@ $router->get('/employees/create', [EmployeeController::class, 'create'])
 $router->post('/employees/create', [EmployeeController::class, 'store'])
        ->middleware('auth')
        ->middleware('role:Ingeniero,MaestroObra');
+
+
+// MÓDULO DE PROYECTOS
+
+// Ver lista (Todos los logueados)
+$router->get('/projects', [ProjectController::class, 'index'])
+       ->middleware('auth');
+
+// Crear (Solo Admin e Ingeniero)
+$router->get('/projects/create', [ProjectController::class, 'create'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
+$router->post('/projects/create', [ProjectController::class, 'store'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
+$router->get('/projects/view/{id}', [ProjectController::class, 'show'])
+       ->middleware('auth');
