@@ -146,9 +146,38 @@ class ProjectController extends Controller
 
         // --- LÓGICA DE TAREAS ---
         $tasksGrouped = $this->taskRepo->getByProjectGrouped($project->id);
+        $assignableUsers = $this->userRepo->getUsersByRole('MaestroObra');
 
-        // Obtenemos usuarios para asignar (podrías filtrar por rol si quisieras)
+        // Obtenemos usuarios para asignar tareas (solo con rol Maestro de Obras)
         $assignableUsers = $this->userRepo->getUsersByRole('MaestroObra'); 
+
+        // Calcular Totales para KPI
+        $pendingCount = count($tasksGrouped['pending']);
+        $inProgressCount = count($tasksGrouped['in_progress']);
+        $completedCount = count($tasksGrouped['completed']);
+
+        $totalTasks = $pendingCount + $inProgressCount + $completedCount;
+
+        // Regla de 3 simple para el porcentaje
+        $progressPercent = ($totalTasks > 0) ? round(($completedCount / $totalTasks) * 100) : 0;
+
+        // --- CÁLCULO DE TIEMPO ---
+        $daysRemaining = 0;
+        $daysLabel = "No definido";
+        
+        if ($project->end_date) {
+            $end = new \DateTime($project->end_date);
+            $now = new \DateTime();
+            
+            if ($now > $end) {
+                $daysRemaining = 0;
+                $daysLabel = "Vencido";
+            } else {
+                $diff = $now->diff($end);
+                $daysRemaining = $diff->days;
+                $daysLabel = $daysRemaining . " días";
+            }
+        }
 
         $this->view('projects/show', [
             'title' => $project->name,
@@ -158,7 +187,30 @@ class ProjectController extends Controller
             'totalAllocated' => $totalAllocated,
             'remainingBudget' => $remainingBudget,
             'tasksGrouped' => $tasksGrouped,
-            'assignableUsers' => $assignableUsers
+            'assignableUsers' => $assignableUsers,
+            'kpi' => [
+                'total_tasks' => $totalTasks,
+                'completed_tasks' => $completedCount,
+                'progress' => $progressPercent,
+                'days_label' => $daysLabel
+            ]
         ]);
+    }
+
+    /**
+     * Acción para cambiar estado del proyecto (POST)
+     */
+    public function updateStatus(string $id): void
+    {
+        $newStatus = $this->request->input('status');
+        
+        // Validar que sea un estado permitido
+        $allowed = ['borrador', 'activo', 'detenido', 'finalizado'];
+        
+        if (in_array($newStatus, $allowed)) {
+            $this->projectRepo->updateStatus((int)$id, $newStatus);
+        }
+
+        $this->redirect("/projects/view/$id");
     }
 }
