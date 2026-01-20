@@ -208,43 +208,52 @@
 
     <div class="tab-pane fade" id="tasks" role="tabpanel">
         
-        <div class="card mb-4 border-0 shadow-sm bg-light">
-            <div class="card-body">
-                <form action="/tasks/create" method="POST" class="row g-2 align-items-end">
-                    <input type="hidden" name="project_id" value="<?= $project->id ?>">
-                    
-                    <div class="col-md-4">
-                        <label class="small text-muted mb-1">Título de la Tarea <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control fw-bold" placeholder="Ej: Revisión de Planos" required>
-                    </div>
+        <?php 
+        // Lógica de permisos para esta vista
+        $role = $_SESSION['role_name'] ?? '';
+        $canCreateTask = in_array($role, ['SuperAdmin', 'Ingeniero']);
+        $canMoveTask = in_array($role, ['SuperAdmin', 'Ingeniero', 'MaestroObra']);
+        ?>
 
-                    <div class="col-md-4">
-                        <label class="small text-muted mb-1">Descripción (Opcional)</label>
-                        <input type="text" name="description" class="form-control" placeholder="Detalles adicionales...">
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="small text-muted mb-1">Maestro Encargado</label>
-                        <select name="assigned_to" class="form-select">
-                            <option value="">-- Sin asignar --</option>
-                            <?php foreach ($assignableUsers as $usr): ?>
-                                <option value="<?= $usr->id ?>">
-                                    <?= htmlspecialchars($usr->name . ' ' . $usr->last_name) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="small text-muted mb-1">Fecha Límite</label>
-                        <div class="input-group">
-                            <input type="date" name="due_date" class="form-control">
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+        <?php if ($canCreateTask): ?>
+            <div class="card mb-4 border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <form action="/tasks/create" method="POST" class="row g-2 align-items-end">
+                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                        
+                        <div class="col-md-4">
+                            <label class="small text-muted mb-1">Título de la Tarea <span class="text-danger">*</span></label>
+                            <input type="text" name="title" class="form-control fw-bold" placeholder="Ej: Revisión de Planos" required>
                         </div>
-                    </div>
-                </form>
+
+                        <div class="col-md-4">
+                            <label class="small text-muted mb-1">Descripción (Opcional)</label>
+                            <input type="text" name="description" class="form-control" placeholder="Detalles adicionales...">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="small text-muted mb-1">Maestro Encargado</label>
+                            <select name="assigned_to" class="form-select">
+                                <option value="">-- Sin asignar --</option>
+                                <?php foreach ($assignableUsers as $usr): ?>
+                                    <option value="<?= $usr->id ?>">
+                                        <?= htmlspecialchars($usr->name . ' ' . $usr->last_name) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="small text-muted mb-1">Fecha Límite</label>
+                            <div class="input-group">
+                                <input type="date" name="due_date" class="form-control">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
+        <?php endif; ?>
 
         <div class="row g-3">
             
@@ -264,13 +273,15 @@
                                         <i class="bi bi-person-circle"></i> <?= htmlspecialchars($task->assigned_user_name ?? 'Nadie') ?>
                                     </small>
                                     
-                                    <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
-                                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
-                                        <input type="hidden" name="status" value="in_progress">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary py-0 lh-1">
-                                            <i class="bi bi-arrow-right"></i>
-                                        </button>
-                                    </form>
+                                    <?php if ($canMoveTask): ?>
+                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                            <input type="hidden" name="status" value="in_progress">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary py-0 lh-1" title="Iniciar Tarea">
+                                                <i class="bi bi-arrow-right"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -294,18 +305,24 @@
                                         <i class="bi bi-person-circle"></i> <?= htmlspecialchars($task->assigned_user_name ?? 'Nadie') ?>
                                     </small>
                                     
-                                    <div class="btn-group">
-                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
-                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
-                                            <input type="hidden" name="status" value="pending">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 me-1"><i class="bi bi-arrow-left"></i></button>
-                                        </form>
-                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
-                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
-                                            <input type="hidden" name="status" value="completed">
-                                            <button type="submit" class="btn btn-sm btn-outline-success py-0"><i class="bi bi-check-lg"></i></button>
-                                        </form>
-                                    </div>
+                                    <?php if ($canMoveTask): ?>
+                                        <div class="btn-group">
+                                            <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                                <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                                <input type="hidden" name="status" value="pending">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary py-0 me-1" title="Devolver a Pendiente">
+                                                    <i class="bi bi-arrow-left"></i>
+                                                </button>
+                                            </form>
+                                            <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                                <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                                <input type="hidden" name="status" value="completed">
+                                                <button type="submit" class="btn btn-sm btn-outline-success py-0" title="Marcar Finalizado">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -327,11 +344,15 @@
                                         <?= $task->completed_at ? date('d/m H:i', strtotime($task->completed_at)) : '-' ?>
                                     </small>
                                     
-                                    <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
-                                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
-                                        <input type="hidden" name="status" value="in_progress">
-                                        <button type="submit" class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-arrow-left"></i></button>
-                                    </form>
+                                    <?php if ($canMoveTask): ?>
+                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                            <input type="hidden" name="status" value="in_progress">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0" title="Reabrir Tarea">
+                                                <i class="bi bi-arrow-left"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

@@ -14,17 +14,27 @@
                 
                 <ul class="navbar-nav me-auto">
                     <?php if (isset($_SESSION['user_id'])): ?>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="/">Dashboard</a>
                         </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="/projects">Proyectos</a>
                         </li>
-                        <?php if (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero', 'MaestroObra'])): ?>
+                        
+                        <?php if (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero', 'Maestro de Obra'])): ?>
                             <li class="nav-item">
-                                <a class="nav-link" href="/employees">Empleados</a>
+                                <a class="nav-link" href="/employees">Planilla (Obreros)</a>
                             </li>
                         <?php endif; ?>
+
+                        <?php if (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero'])): ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/users">Usuarios (Staff)</a>
+                            </li>
+                        <?php endif; ?>
+
                     <?php endif; ?>
                 </ul>
 

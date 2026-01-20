@@ -93,9 +93,13 @@ class ProjectController extends Controller
         // Capturar los IDs del formulario
         $clientId = (int) $data['client_id'];
         
-        // masters_ids vendrá como un array si usamos name="masters[]" en el HTML
-        // Si no se selecciona ninguno, asignamos array vacío
-        $masterIds = $data['masters'] ?? []; 
+        // masters_ids viene como un array si se usa name="masters[]" en el HTML
+        // getBody() a veces rompe los arrays (checkboxes). 
+        // Por eso se toma 'masters' directamente de $_POST
+        $masterIds = [];
+        if (isset($_POST['masters']) && is_array($_POST['masters'])) {
+            $masterIds = $_POST['masters'];
+        }
 
         try {
             $this->projectRepo->createWithAssignments($project, $clientId, $masterIds);

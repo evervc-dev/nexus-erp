@@ -90,6 +90,15 @@ class UserRepository
     }
 
     /**
+     * Obtiene todos los roles disponibles.
+     */
+    public function getAllRoles(): array
+    {
+        $stmt = $this->pdo->query("SELECT * FROM roles ORDER BY id ASC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Busca el ID de un rol por su nombre.
      */
     public function getRoleIdByName(string $roleName): ?int
