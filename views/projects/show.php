@@ -12,6 +12,9 @@
                     <h2 class="fw-bold mb-0 text-dark"><?= htmlspecialchars($project->name) ?></h2>
                     
                     <?php if (in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero'])): ?>
+                        <a href="/projects/edit/<?= $project->id ?>" class="btn btn-light border btn-sm rounded-circle text-muted" title="Configuración">
+                            <i class="bi bi-gear-fill"></i>
+                        </a>
                         <div class="dropdown">
                             <button class="btn btn-<?= $project->getStatusColor() ?> btn-sm rounded-pill px-3 dropdown-toggle fw-bold text-uppercase" type="button" data-bs-toggle="dropdown">
                                 <?= ucfirst($project->status) ?>

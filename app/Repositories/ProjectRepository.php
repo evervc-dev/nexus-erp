@@ -209,4 +209,32 @@ class ProjectRepository
             throw $e;
         }
     }
+
+    public function update(Project $project): void
+    {
+        $sql = "UPDATE projects SET 
+                name = :name, 
+                location = :loc, 
+                start_date = :start, 
+                end_date = :end, 
+                budget = :budget 
+                WHERE id = :id";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'name' => $project->name,
+            'loc' => $project->location,
+            'start' => $project->start_date ?: null,
+            'end' => $project->end_date ?: null,
+            'budget' => $project->budget,
+            'id' => $project->id
+        ]);
+    }
+
+    public function delete(int $id): void
+    {
+        // Esto borrará tareas, asignaciones y presupuesto automáticamente.
+        $stmt = $this->pdo->prepare("DELETE FROM projects WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+    }
 }

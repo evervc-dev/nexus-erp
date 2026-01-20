@@ -65,6 +65,19 @@ $router->post('/projects/create', [ProjectController::class, 'store'])
 $router->get('/projects/view/{id}', [ProjectController::class, 'show'])
        ->middleware('auth');
 
+$router->get('/projects/edit/{id}', [ProjectController::class, 'edit'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
+$router->post('/projects/edit/{id}', [ProjectController::class, 'update'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
+// ELIMINAR PROYECTO (Solo SuperAdmin)
+$router->post('/projects/delete/{id}', [ProjectController::class, 'delete'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin');
+
 // Cambiar Estado del Proyecto (Solo Admin e Ingeniero)
 $router->post('/projects/update-status/{id}', [ProjectController::class, 'updateStatus'])
        ->middleware('auth')

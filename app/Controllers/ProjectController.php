@@ -205,6 +205,77 @@ class ProjectController extends Controller
     }
 
     /**
+     * Formulario de Edición
+     */
+    public function edit(string $id): void
+    {
+        // 1. Verificar permisos (Solo Admin e Ingeniero dueño)
+        $userId = $_SESSION['user_id'];
+        $roleName = $_SESSION['role_name'];
+        
+        $project = $this->projectRepo->find((int)$id, $userId, $roleName);
+
+        if (!$project) {
+            $this->redirect('/projects');
+            return;
+        }
+
+        // Bloquear si no es Admin o el Manager del proyecto
+        if ($roleName !== 'SuperAdmin' && $project->manager_id !== $userId) {
+             // Redirigir o error 403
+             $this->redirect('/projects');
+             return;
+        }
+
+        $this->view('projects/edit', [
+            'title' => 'Editar Proyecto',
+            'project' => $project
+        ]);
+    }
+
+    /**
+     * Procesar Actualización
+     */
+    public function update(string $id): void
+    {
+        $data = $this->request->getBody();
+
+        // Creamos el objeto con los datos nuevos, manteniendo el ID
+        $project = new Project(
+            (int)$id,
+            0, // Manager ID no cambia, no importa enviarlo aquí
+            $data['name'],
+            $data['location'],
+            $data['start_date'],
+            $data['end_date'],
+            (float) $data['budget'],
+            'borrador' // El estado no se cambia aquí, sino en el dashboard
+        );
+
+        $this->projectRepo->update($project);
+        
+        $this->redirect("/projects/view/$id");
+    }
+
+    /**
+     * Eliminar Proyecto (Solo SuperAdmin)
+     */
+    public function delete(string $id): void
+    {
+        // Doble verificación de seguridad
+        if ($_SESSION['role_name'] !== 'SuperAdmin') {
+            (new ErrorController())->show(
+                403,
+                "No tienes permiso para eliminar proyectos."
+            );
+            exit;
+        }
+
+        $this->projectRepo->delete((int)$id);
+        $this->redirect('/projects');
+    }
+
+    /**
      * Acción para cambiar estado del proyecto (POST)
      */
     public function updateStatus(string $id): void
