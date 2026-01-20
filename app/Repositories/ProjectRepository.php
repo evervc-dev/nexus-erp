@@ -61,34 +61,55 @@ class ProjectRepository
 
     public function find(int $projectId, int $userId, string $roleName): ?Project
     {
-        $sql = "SELECT p.*, CONCAT(u.name, ' ', u.last_name) as manager_name 
-                FROM projects p
-                JOIN users u ON p.manager_id = u.id ";
+        $project = $this->findById($projectId);
 
-        // Base de condiciones WHERE
-        $whereClauses = ["p.id = :pid"];
-        $params = ['pid' => $projectId];
-
-        // Filtros de seguridad según rol
-        if ($roleName === 'Ingeniero') {
-            $whereClauses[] = "p.manager_id = :uid";
-            $params['uid'] = $userId;
-        } 
-        elseif ($roleName !== 'SuperAdmin') {
-            // Clientes y Maestros: Verificar tabla de asignaciones
-            $sql .= " JOIN project_assignments pa ON p.id = pa.project_id ";
-            $whereClauses[] = "pa.user_id = :uid";
-            $params['uid'] = $userId;
+        if (!$project) {
+            return null;
         }
 
-        // Construir query final
-        $sql .= " WHERE " . implode(" AND ", $whereClauses) . " LIMIT 1";
+        return $this->userHasAccess($projectId, $userId, $roleName) ? $project : null;
+    }
+
+    /**
+     * Busca el proyecto por su ID.
+     */
+    public function findById(int $projectId): ?Project
+    {
+        $sql = "SELECT p.*, CONCAT(u.name, ' ', u.last_name) as manager_name 
+                FROM projects p
+                JOIN users u ON p.manager_id = u.id
+                WHERE p.id = :pid
+                LIMIT 1";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        $stmt->execute(['pid' => $projectId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $row ? Project::fromArray($row) : null;
+    }
+
+    /**
+     * Verifica si el usuario tiene acceso al proyecto según su rol.
+     */
+    public function userHasAccess(int $projectId, int $userId, string $roleName): bool
+    {
+        if ($roleName === 'SuperAdmin') {
+            return true;
+        }
+
+        if ($roleName === 'Ingeniero') {
+            $sql = "SELECT 1 FROM projects WHERE id = :pid AND manager_id = :uid LIMIT 1";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['pid' => $projectId, 'uid' => $userId]);
+            return (bool) $stmt->fetchColumn();
+        }
+
+        // Cliente o Maestro: debe estar asignado
+        $sql = "SELECT 1 FROM project_assignments WHERE project_id = :pid AND user_id = :uid LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['pid' => $projectId, 'uid' => $userId]);
+
+        return (bool) $stmt->fetchColumn();
     }
 
     public function save(Project $project): int

@@ -119,14 +119,21 @@ class ProjectController extends Controller
         $userId = $_SESSION['user_id'];
         $roleName = $_SESSION['role_name'];
 
-        // Busca por ID con contexto de usuario
-        $project = $this->projectRepo->find((int)$id, $userId, $roleName);
+        // Busca el proyecto sin reglas de acceso para diferenciar 404 de 403
+        $project = $this->projectRepo->findById((int)$id);
 
-        // Si no existe, error 404
         if (!$project) {
             (new ErrorController())->show(
                 404,
-                "El proyecto con ID ['$id'] no existe o no tienes permiso para verlo"
+                "El proyecto con ID [$id] no existe"
+            );
+            exit;
+        }
+
+        if (!$this->projectRepo->userHasAccess($project->id, $userId, $roleName)) {
+            (new ErrorController())->show(
+                403,
+                "No tienes permiso para ver el proyecto con ID [$id]"
             );
             exit;
         }
