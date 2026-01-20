@@ -7,15 +7,18 @@ use App\Core\Database;
 use App\Core\Request;
 use App\Repositories\ProjectRepository;
 use App\Models\Project;
+use App\Repositories\BudgetRepository;
 
 class ProjectController extends Controller
 {
     private ProjectRepository $projectRepo;
+    private BudgetRepository $budgetRepo;
 
     public function __construct(Database $db, Request $request)
     {
         parent::__construct($db, $request);
         $this->projectRepo = new ProjectRepository($db);
+        $this->budgetRepo = new BudgetRepository($db);
     }
 
     /**
@@ -78,24 +81,42 @@ class ProjectController extends Controller
      */
     public function show(string $id): void
     {
-        // 1. Convertir ID y buscar
+        // Convertir ID y buscar
         $project = $this->projectRepo->find((int)$id);
 
-        // 2. Si no existe, error 404
+        // Si no existe, error 404
         if (!$project) {
-            // Podrías lanzar una excepción o llamar al ErrorController manual
-            // Por simplicidad, redirigimos con error por ahora
-            header('Location: /projects'); 
+            (new ErrorController())->show(
+                404,
+                "El proyecto con ID ['$id'] no existe"
+            );
             exit;
         }
 
         // 3. (AQUÍ VA LA LÓGICA DE PERMISOS FUTURA)
         // Ejemplo: Si soy 'Cliente', verificar si $project->id está en mis asignaciones.
 
-        // 4. Cargar vista
+        // --- NUEVA LÓGICA PARA PRESUPUESTO ---
+        // Obtiene los items que ya están en el presupuesto
+        $budgetItems = $this->budgetRepo->getItemsByProject($project->id);
+        
+        // Obtiene el catálogo completo (para el select de "Agregar Material")
+        $allMaterials = $this->budgetRepo->getAllMaterials();
+        
+        // Calcula cuánto se ha gastado (planificado)
+        $totalAllocated = $this->budgetRepo->getTotalBudget($project->id);
+        
+        // Calcula el remanente
+        $remainingBudget = $project->budget - $totalAllocated;
+
         $this->view('projects/show', [
             'title' => $project->name,
-            'project' => $project
+            'project' => $project,
+            // Pasamos las nuevas variables a la vista:
+            'budgetItems' => $budgetItems,
+            'allMaterials' => $allMaterials,
+            'totalAllocated' => $totalAllocated,
+            'remainingBudget' => $remainingBudget
         ]);
     }
 }

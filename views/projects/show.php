@@ -94,12 +94,114 @@
     </div>
 
     <div class="tab-pane fade" id="budget" role="tabpanel">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-calculator fs-1 text-muted mb-3"></i>
-                <h5>Módulo de Materiales y Costos</h5>
-                <p class="text-muted">Aquí gestionaremos la lista de materiales y control de gastos.</p>
-                <button class="btn btn-outline-dark btn-sm">Configurar Presupuesto (Próximamente)</button>
+        
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded border border-success-subtle">
+                    <small class="text-uppercase text-muted fw-bold">Presupuesto Global</small>
+                    <div class="fs-4 fw-bold text-dark">$<?= number_format($project->budget, 2) ?></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded border border-warning-subtle">
+                    <small class="text-uppercase text-muted fw-bold">Planificado (Materiales)</small>
+                    <div class="fs-4 fw-bold text-warning">$<?= number_format($totalAllocated, 2) ?></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded border border-primary-subtle">
+                    <small class="text-uppercase text-muted fw-bold">Disponible</small>
+                    <div class="fs-4 fw-bold <?= $remainingBudget < 0 ? 'text-danger' : 'text-success' ?>">
+                        $<?= number_format($remainingBudget, 2) ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php if (in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero'])): ?>
+            <div class="card mb-4 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-cart-plus me-2"></i>Agregar Material al Presupuesto</h6>
+                    <form action="/budget/add" method="POST" class="row g-2 align-items-end">
+                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                        
+                        <div class="col-md-5">
+                            <label class="small text-muted mb-1">Material</label>
+                            <select class="form-select" name="material_id" required>
+                                <option value="">Seleccione...</option>
+                                <?php foreach ($allMaterials as $mat): ?>
+                                    <option value="<?= $mat->id ?>">
+                                        <?= htmlspecialchars($mat->name) ?> ($<?= $mat->unit_price ?> / <?= $mat->unit ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="small text-muted mb-1">Cantidad</label>
+                            <input type="number" step="0.01" class="form-control" name="quantity" placeholder="0.00" required>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="small text-muted mb-1">Notas (Opcional)</label>
+                            <input type="text" class="form-control" name="notes" placeholder="Ej: Para cimientos">
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-plus-lg"></i> Agregar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Material</th>
+                            <th>Unidad</th>
+                            <th>Precio (Hist.)</th>
+                            <th>Cantidad</th>
+                            <th>Subtotal</th>
+                            <th>Notas</th>
+                            <th class="text-end pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($budgetItems)): ?>
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    No hay materiales asignados a este presupuesto.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($budgetItems as $item): ?>
+                                <tr>
+                                    <td class="ps-4 fw-bold text-dark"><?= htmlspecialchars($item->material_name) ?></td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary"><?= htmlspecialchars($item->material_unit) ?></span></td>
+                                    <td>$<?= number_format($item->historical_cost, 2) ?></td>
+                                    <td><?= $item->quantity ?></td>
+                                    <td class="fw-bold text-success">$<?= number_format($item->getSubtotal(), 2) ?></td>
+                                    <td class="small text-muted"><?= htmlspecialchars($item->notes ?? '-') ?></td>
+                                    <td class="text-end pe-4">
+                                        <?php if (in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero'])): ?>
+                                            <form action="/budget/delete/<?= $item->id ?>" method="POST" onsubmit="return confirm('¿Eliminar este item?');">
+                                                <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -126,3 +228,20 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Verificar si hay un parametro ?tab=...
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+
+        if (activeTab) {
+            // Buscar el botón que abre esa pestaña y hacerle clic
+            const triggerEl = document.querySelector(`#projectTabs button[data-bs-target="#${activeTab}"]`);
+            if (triggerEl) {
+                const tabInstance = new bootstrap.Tab(triggerEl);
+                tabInstance.show();
+            }
+        }
+    });
+</script>
