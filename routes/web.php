@@ -4,6 +4,7 @@ use App\Controllers\AuthController;
 use App\Controllers\EmployeeController;
 use App\Controllers\HomeController;
 use App\Controllers\ProjectController;
+use App\Controllers\BudgetController;
 
 /** @var App\Core\Router $router */
 
@@ -61,3 +62,12 @@ $router->post('/projects/create', [ProjectController::class, 'store'])
 
 $router->get('/projects/view/{id}', [ProjectController::class, 'show'])
        ->middleware('auth');
+
+// Acciones de Presupuesto (Solo Ingenieros/Admin)
+$router->post('/budget/add', [BudgetController::class, 'store'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');
+
+$router->post('/budget/delete/{id}', [BudgetController::class, 'delete'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero');

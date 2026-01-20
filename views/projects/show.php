@@ -207,13 +207,138 @@
     </div>
 
     <div class="tab-pane fade" id="tasks" role="tabpanel">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-kanban fs-1 text-muted mb-3"></i>
-                <h5>Gestión de Tareas</h5>
-                <p class="text-muted">Asignación de actividades a Maestros y Empleados.</p>
-                <button class="btn btn-outline-dark btn-sm">Crear Tarea (Próximamente)</button>
+        
+        <div class="card mb-4 border-0 shadow-sm bg-light">
+            <div class="card-body">
+                <form action="/tasks/create" method="POST" class="row g-2 align-items-end">
+                    <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                    
+                    <div class="col-md-4">
+                        <label class="small text-muted mb-1">Título de la Tarea <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control fw-bold" placeholder="Ej: Revisión de Planos" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="small text-muted mb-1">Descripción (Opcional)</label>
+                        <input type="text" name="description" class="form-control" placeholder="Detalles adicionales...">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-1">Maestro Encargado</label>
+                        <select name="assigned_to" class="form-select">
+                            <option value="">-- Sin asignar --</option>
+                            <?php foreach ($assignableUsers as $usr): ?>
+                                <option value="<?= $usr->id ?>">
+                                    <?= htmlspecialchars($usr->name . ' ' . $usr->last_name) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-1">Fecha Límite</label>
+                        <div class="input-group">
+                            <input type="date" name="due_date" class="form-control">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+                </form>
             </div>
+        </div>
+
+        <div class="row g-3">
+            
+            <div class="col-md-4">
+                <div class="p-3 bg-secondary bg-opacity-10 rounded h-100">
+                    <h6 class="text-uppercase text-secondary fw-bold mb-3 border-bottom pb-2">Por Hacer</h6>
+                    <?php foreach ($tasksGrouped['pending'] as $task): ?>
+                        <div class="card mb-2 border-0 shadow-sm border-start border-4 border-secondary">
+                            <div class="card-body p-3">
+                                <h6 class="mb-1 fw-bold"><?= htmlspecialchars($task->title) ?></h6>
+                                <?php if($task->description): ?>
+                                    <p class="small text-muted mb-2 lh-sm"><?= htmlspecialchars($task->description) ?></p>
+                                <?php endif; ?>
+                                
+                                <div class="d-flex justify-content-between align-items-end mt-2">
+                                    <small class="text-secondary fw-bold" style="font-size: 0.7rem;">
+                                        <i class="bi bi-person-circle"></i> <?= htmlspecialchars($task->assigned_user_name ?? 'Nadie') ?>
+                                    </small>
+                                    
+                                    <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                        <input type="hidden" name="status" value="in_progress">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary py-0 lh-1">
+                                            <i class="bi bi-arrow-right"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 bg-primary bg-opacity-10 rounded h-100">
+                    <h6 class="text-uppercase text-primary fw-bold mb-3 border-bottom pb-2">En Proceso</h6>
+                    <?php foreach ($tasksGrouped['in_progress'] as $task): ?>
+                        <div class="card mb-2 border-0 shadow-sm border-start border-4 border-primary">
+                            <div class="card-body p-3">
+                                <h6 class="mb-1 fw-bold"><?= htmlspecialchars($task->title) ?></h6>
+                                <?php if($task->description): ?>
+                                    <p class="small text-muted mb-2 lh-sm"><?= htmlspecialchars($task->description) ?></p>
+                                <?php endif; ?>
+                                
+                                <div class="d-flex justify-content-between align-items-end mt-2">
+                                    <small class="text-primary fw-bold" style="font-size: 0.7rem;">
+                                        <i class="bi bi-person-circle"></i> <?= htmlspecialchars($task->assigned_user_name ?? 'Nadie') ?>
+                                    </small>
+                                    
+                                    <div class="btn-group">
+                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                            <input type="hidden" name="status" value="pending">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 me-1"><i class="bi bi-arrow-left"></i></button>
+                                        </form>
+                                        <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                            <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                            <input type="hidden" name="status" value="completed">
+                                            <button type="submit" class="btn btn-sm btn-outline-success py-0"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 bg-success bg-opacity-10 rounded h-100">
+                    <h6 class="text-uppercase text-success fw-bold mb-3 border-bottom pb-2">Finalizado</h6>
+                    <?php foreach ($tasksGrouped['completed'] as $task): ?>
+                        <div class="card mb-2 border-0 shadow-sm border-start border-4 border-success bg-white opacity-75">
+                            <div class="card-body p-3">
+                                <h6 class="mb-1 fw-bold text-decoration-line-through text-muted"><?= htmlspecialchars($task->title) ?></h6>
+                                
+                                <div class="d-flex justify-content-between align-items-end mt-2">
+                                    <small class="text-muted" style="font-size: 0.7rem;">
+                                        <i class="bi bi-calendar-check"></i> 
+                                        <?= $task->completed_at ? date('d/m H:i', strtotime($task->completed_at)) : '-' ?>
+                                    </small>
+                                    
+                                    <form action="/tasks/update-status/<?= $task->id ?>" method="POST">
+                                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                                        <input type="hidden" name="status" value="in_progress">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-arrow-left"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
         </div>
     </div>
 

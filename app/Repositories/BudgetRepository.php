@@ -21,7 +21,7 @@ class BudgetRepository
      */
     public function getItemsByProject(int $projectId): array
     {
-        // JOIN vital para mostrar nombre y unidad del material
+        // JOIN para mostrar nombre y unidad del material
         $sql = "SELECT pbi.*, m.name as material_name, m.unit as material_unit
                 FROM project_budget_items pbi
                 JOIN materials m ON pbi.material_id = m.id
@@ -62,7 +62,7 @@ class BudgetRepository
             'pid' => $projectId,
             'mid' => $materialId,
             'qty' => $quantity,
-            'cost' => $currentPrice, // ¡Aquí guardamos el precio congelado!
+            'cost' => $currentPrice,
             'notes' => $notes
         ]);
     }

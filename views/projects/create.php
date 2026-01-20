@@ -49,7 +49,23 @@
                         </div>
 
                         <div class="col-md-6">
-                            </div>
+                            <label for="client_id" class="form-label fw-bold small">Cliente Propietario <span class="text-danger">*</span></label>
+                            <select class="form-select" id="client_id" name="client_id" required>
+                                <option value="">Seleccione un cliente...</option>
+                                <?php if (!empty($clients)): ?>
+                                    <?php foreach ($clients as $client): ?>
+                                        <option value="<?= $client->id ?>">
+                                            <?= htmlspecialchars($client->name . ' ' . $client->last_name) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <?php if (empty($clients)): ?>
+                                <div class="form-text text-danger">⚠ No hay clientes registrados.</div>
+                            <?php else: ?>
+                                <div class="form-text">El proyecto será visible para este usuario.</div>
+                            <?php endif; ?>
+                        </div>
 
                         <div class="col-md-6">
                             <label for="start_date" class="form-label fw-bold small">Fecha de Inicio</label>
@@ -62,7 +78,50 @@
                         </div>
                     </div>
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end pt-3">
+                    <hr class="text-muted opacity-25">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small mb-3">Asignar Maestros de Obra</label>
+                        
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <?php if (empty($masters)): ?>
+                                    <div class="text-center py-3 text-muted">
+                                        <i class="bi bi-exclamation-circle me-2"></i>
+                                        No hay usuarios con el rol 'Maestro de Obra' registrados en el sistema.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="row g-3">
+                                        <?php foreach ($masters as $master): ?>
+                                            <div class="col-md-6 col-lg-4">
+                                                <div class="form-check p-3 bg-white rounded border shadow-sm h-100 position-relative">
+                                                    <input class="form-check-input ms-0 me-2" type="checkbox" 
+                                                           name="masters[]" 
+                                                           value="<?= $master->id ?>" 
+                                                           id="master_<?= $master->id ?>">
+                                                    <label class="form-check-label stretched-link" for="master_<?= $master->id ?>">
+                                                        <span class="d-block fw-bold text-dark">
+                                                            <?= htmlspecialchars($master->name . ' ' . $master->last_name) ?>
+                                                        </span>
+                                                        <small class="text-muted">
+                                                            <i class="bi bi-telephone-fill me-1" style="font-size: 0.7rem;"></i>
+                                                            <?= htmlspecialchars($master->phone ?? 'Sin teléfono') ?>
+                                                        </small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Selecciona los maestros que trabajarán en este proyecto. Podrás asignarles tareas específicas más adelante.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end pt-3 border-top">
                         <button type="submit" class="btn btn-primary px-5">
                             <i class="bi bi-save me-2"></i> Crear Proyecto
                         </button>

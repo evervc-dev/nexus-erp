@@ -9,7 +9,7 @@ return function (PDO $pdo) {
             title VARCHAR(150) NOT NULL,
             description TEXT,
             due_date DATE,
-            is_completed BOOLEAN DEFAULT FALSE,
+            status VARCHAR(20) DEFAULT 'pending', -- pending, in_progress, completed
             completed_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
