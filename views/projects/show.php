@@ -433,13 +433,108 @@
     </div>
 
     <div class="tab-pane fade" id="reports" role="tabpanel">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-camera fs-1 text-muted mb-3"></i>
-                <h5>Bitácora de Obra</h5>
-                <p class="text-muted">Reportes diarios y evidencia fotográfica.</p>
-                <button class="btn btn-outline-dark btn-sm">Nuevo Reporte (Próximamente)</button>
+        
+        <?php if (in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero', 'MaestroObra'])): ?>
+            <div class="card mb-4 shadow-sm border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Nuevo Reporte Diario</h6>
+                    
+                    <form action="/reports/create" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="project_id" value="<?= $project->id ?>">
+                        
+                        <div class="mb-3">
+                            <textarea class="form-control" name="content" rows="2" placeholder="Describe el avance del día, materiales recibidos, etc..." required></textarea>
+                        </div>
+                        
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div class="input-group w-auto">
+                                <input type="file" class="form-control form-control-sm" name="images[]" multiple accept="image/*">
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="incidents_flag" id="incidentsFlag">
+                                <label class="form-check-label text-danger fw-bold small" for="incidentsFlag">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Reportar Incidente/Retraso
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-send-fill me-2"></i>Publicar
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
+        <?php endif; ?>
+
+        <div class="logs-container">
+            <?php if (empty($logs)): ?>
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-journal-album fs-1 d-block mb-3 opacity-50"></i>
+                    <p>No hay reportes registrados en la bitácora aún.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($logs as $report): ?>
+                    <div class="card mb-3 shadow-sm <?= $report->incidents_flag ? 'border-danger border-start border-4 bg-danger bg-opacity-10' : 'border-0' ?>">
+                        <div class="card-body">
+                            
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                
+                                <div>
+                                    <span class="fw-bold text-dark me-2"><?= htmlspecialchars($report->author_name) ?></span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary text-uppercase" style="font-size: 0.7rem;">
+                                        <?= htmlspecialchars($report->author_role) ?>
+                                    </span>
+                                    <?php if($report->incidents_flag): ?>
+                                        <span class="badge bg-danger ms-2">INCIDENTE</span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="text-end d-flex align-items-center gap-3">
+                                    <div>
+                                        <small class="text-dark fw-bold d-block">
+                                            <?= date('d/m/Y', strtotime($report->report_date)) ?>
+                                        </small>
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            <?= date('h:i A', strtotime($report->created_at)) ?>
+                                        </small>
+                                    </div>
+
+                                    <?php 
+                                        $isAuthor = (isset($_SESSION['user_id']) && $report->author_id === $_SESSION['user_id']);
+                                        $isAdminOrEng = (isset($_SESSION['role_name']) && in_array($_SESSION['role_name'], ['SuperAdmin', 'Ingeniero']));
+                                        
+                                        if ($isAdminOrEng || $isAuthor): 
+                                    ?>
+                                        <form action="/reports/delete/<?= $report->id ?>" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este reporte?\nSe borrarán las fotos asociadas permanentemente.');">
+                                            <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Eliminar reporte">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            
+                            <p class="card-text mb-3 <?= $report->incidents_flag ? 'text-dark' : 'text-secondary' ?>">
+                                <?= nl2br(htmlspecialchars($report->content)) ?>
+                            </p>
+
+                            <?php if (!empty($report->images)): ?>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <?php foreach ($report->images as $img): ?>
+                                        <div class="rounded-3 overflow-hidden border bg-white" style="width: 100px; height: 100px;">
+                                            <a href="<?= $img->image_url ?>" target="_blank">
+                                                <img src="<?= $img->image_url ?>" class="img-fluid w-100 h-100" style="object-fit: cover;" alt="Evidencia">
+                                            </a>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </div>

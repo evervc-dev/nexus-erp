@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Repositories\BudgetRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\TaskRepository;
+use App\Repositories\ReportRepository;
 
 class ProjectController extends Controller
 {
@@ -17,6 +18,8 @@ class ProjectController extends Controller
     private BudgetRepository $budgetRepo;
     private UserRepository $userRepo;
     private TaskRepository $taskRepo;
+    private ReportRepository $reportRepo;
+    
 
     public function __construct(Database $db, Request $request)
     {
@@ -25,6 +28,7 @@ class ProjectController extends Controller
         $this->budgetRepo = new BudgetRepository($db);
         $this->userRepo = new UserRepository($db);
         $this->taskRepo = new TaskRepository($db);
+        $this->reportRepo = new ReportRepository($db); // Instanciar
     }
 
     /**
@@ -186,6 +190,9 @@ class ProjectController extends Controller
             }
         }
 
+        // --- BITÁCORA (REPORTES DIARIOS) ---
+        $dailyReports = $this->reportRepo->getByProject($project->id);
+
         $this->view('projects/show', [
             'title' => $project->name,
             'project' => $project,
@@ -200,7 +207,8 @@ class ProjectController extends Controller
                 'completed_tasks' => $completedCount,
                 'progress' => $progressPercent,
                 'days_label' => $daysLabel
-            ]
+            ],
+            'logs' => $dailyReports // Usamos la misma variable 'logs' en la vista para no romper mucho, o cámbiala a 'reports'
         ]);
     }
 

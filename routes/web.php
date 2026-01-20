@@ -5,6 +5,7 @@ use App\Controllers\EmployeeController;
 use App\Controllers\HomeController;
 use App\Controllers\ProjectController;
 use App\Controllers\BudgetController;
+use App\Controllers\ReportController;
 use App\Controllers\TaskController;
 use App\Controllers\UserController;
 
@@ -118,3 +119,11 @@ $router->get('/users/create', [UserController::class, 'create'])
 $router->post('/users/create', [UserController::class, 'store'])
        ->middleware('auth')
        ->middleware('role:SuperAdmin,Ingeniero');
+
+// -- REPORTES --
+$router->post('/reports/create', [ReportController::class, 'store'])
+       ->middleware('auth')
+       ->middleware('role:SuperAdmin,Ingeniero,MaestroObra');
+
+$router->post('/reports/delete/{id}', [ReportController::class, 'delete'])
+       ->middleware('auth');
